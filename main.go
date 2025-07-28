@@ -16,6 +16,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/gorilla/handlers"
 	"github.com/oschwald/maxminddb-golang"
 	"storj.io/uplink"
 )
@@ -45,9 +46,10 @@ func main() {
 	isJson := flag.Bool("json", false, "output device list in json")
 
 	batchSize := flag.Int("batch-size", 1, "number of detected connections to batch send to frontend")
-	srcLat := flag.Float64("lat", 39.781932, "src lat - where lines start")
-	srcLng := flag.Float64("lng", -104.970578, "src lng - where lines start")
-	device := flag.String("device", "en0", "list devices")
+
+	srcLat := flag.Float64("lat", 11.668939232473333, "src lat - where lines start")
+	srcLng := flag.Float64("lng", 122.35454519799849, "src lng - where lines start")
+	device := flag.String("device", "\\Device\\NPF_{3B917C5D-DB38-4E06-AAE9-2B09DC059A7B}", "list devices")
 	// TODO better way to do debugging
 	debug := flag.Bool("debug", true, "debug messages")
 	flag.Parse()
@@ -76,7 +78,13 @@ func main() {
 
 	go func() {
 		log.Printf("Listening on %s:%d\n", *hostname, *port)
-		log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *hostname, *port), server))
+		// Set up CORS to allow all origins
+		corsHandler := handlers.CORS(
+			handlers.AllowedOrigins([]string{"*"}),
+			handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+			handlers.AllowedHeaders([]string{"Content-Type", "X-Requested-With"}),
+		)
+		log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *hostname, *port), corsHandler(server)))
 	}()
 	go func() {
 		server.StartBroadcasts()
@@ -93,7 +101,10 @@ func main() {
 	defer db.Close()
 
 	// Open device
+
 	handle, err = pcap.OpenLive(*device, snapshotLen, promiscuous, timeout)
+	//handle, err := pcap.OpenLive("\\Device\\NPF_{3B917C5D-DB38-4E06-AAE9-2B09DC059A7B}", 1600, true, pcap.BlockForever)
+
 	if err != nil {
 		// https://github.com/hortinstein/node-dash-button/issues/15
 		if strings.Contains(err.Error(), "Permission denied") {
@@ -109,7 +120,10 @@ func main() {
 			return
 		}
 		log.Fatal(err)
+	} else {
+		log.Printf("Cspturing on device %s", *device)
 	}
+
 	defer handle.Close()
 	filter := "tcp"
 	//	filter := "tcp[13] & 2!=0"
@@ -121,7 +135,9 @@ func main() {
 
 	fmt.Println("Only capturing TCP packets.")
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	myIp := getIPv4FromInterface(*device)
+	//myIp := getIPv4FromInterface(*device)
+	myIp := net.ParseIP("192.168.1.100")
+
 	for packet := range packetSource.Packets() {
 		ip, _, rec, err := ipToCoord(db, packet, myIp)
 		if err != nil {

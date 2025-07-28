@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/google/gopacket v1.1.19
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/oschwald/maxminddb-golang v1.10.0
@@ -12,6 +13,7 @@ require (
 
 require (
 	github.com/calebcase/tmpfile v1.0.3 // indirect
+	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/jtolio/eventkit v0.0.0-20221004135224-074cf276595b // indirect
 	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
