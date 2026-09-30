@@ -19,7 +19,9 @@ See a [demo](https://demo.storj.dev)
 
 ### Prerequisites
 
-- libpcap (for packet capturing)
+- Packet capture library: libpcap (Linux/macOS) or [Npcap](https://npcap.com/) (Windows)
+  - Windows: install Npcap with "WinPcap API-compatible mode" checked (requires admin). No `chmod` step needed.
+  - Linux/macOS: libpcap (see Install/Build below)
 - GeoLite2-City.mmdb database from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en)
   - Obtain the Free [GeoLite2-City.mmdb database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en)
   - Extract and place the database file (`GeoLite2-City.mmdb`) in the project directory or specify path with `--geolite2-path` flag
@@ -41,6 +43,17 @@ wget https://github.com/amozoss/network-globe/releases/latest/download/network-g
 unzip network-globe_darwin_arm.zip
 ```
 
+#### Windows
+
+1. Install [Npcap](https://npcap.com/#download) (check "WinPcap API-compatible mode"), then reboot if prompted.
+2. Download the Windows release (or build from source below) and place `GeoLite2-City.mmdb` next to `network-globe.exe`.
+3. Open PowerShell **as Administrator** (packet capture requires elevation):
+
+```powershell
+.\network-globe.exe --list-devices
+.\network-globe.exe --device "\Device\NPF_{YOUR-DEVICE-GUID}" --geolite2-path .\GeoLite2-City.mmdb
+```
+
 ## Usage
 
 1.  Give read permissions for pcap to read the network packets:
@@ -59,6 +72,13 @@ unzip network-globe_darwin_arm.zip
     ./network-globe --device en0
     ```
 
+    On Windows (PowerShell as Administrator), device names look like `\Device\NPF_{...}`:
+
+    ```powershell
+    .\network-globe.exe --list-devices
+    .\network-globe.exe --device "\Device\NPF_{YOUR-DEVICE-GUID}"
+    ```
+
 1.  Set the GeoLite2 database path:
 
     ```bash
@@ -73,6 +93,12 @@ unzip network-globe_darwin_arm.zip
     ./network-globe
     ```
 
+    On Windows, run PowerShell as Administrator:
+
+    ```powershell
+    .\network-globe.exe
+    ```
+
 1.  Open the browser and navigate to <http://localhost:8000>
 
 1.  (Optional) Set the source location (Latitude and Longitude) for the Globe visualization:
@@ -83,13 +109,6 @@ unzip network-globe_darwin_arm.zip
     ./network-globe --lat 39.781932 --lng -104.970578
     ```
 
-1.  (Optional) Demo uploads to Storj:
-
-    - Sign up for a free trial account at [Storj](https://storj.io?ref=network-globe).
-    - Obtain an [Access Grant](https://docs.storj.io/dcs/access#create-access-grant)
-    - Set the `--access` and `--bucket` flags with the Access Grant and Bucket name.
-
-    - Use the provided script or your preferred method to upload a file to Storj.
 
 ## Build
 
@@ -111,6 +130,24 @@ CGO_ENABLED=1 go build
 
 ```bash
 go build
+```
+
+### Windows
+
+Requires Go, gcc (e.g. [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) or mingw-w64), and the [Npcap SDK](https://npcap.com/#download):
+
+```powershell
+# Point CGO at the Npcap SDK (adjust path to where you extracted it)
+$env:CGO_CFLAGS="-I C:\npcap-sdk\Include"
+$env:CGO_LDFLAGS="-L C:\npcap-sdk\Lib\x64 -lwpcap -lPacket"
+go build
+```
+
+Then run PowerShell as Administrator:
+
+```powershell
+.\network-globe.exe --list-devices
+.\network-globe.exe --device "\Device\NPF_{YOUR-DEVICE-GUID}" --geolite2-path .\GeoLite2-City.mmdb
 ```
 
 ## Project Structure
